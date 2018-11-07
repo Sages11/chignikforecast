@@ -265,3 +265,247 @@ print(model) #get full model RMSE (Root Mean Square Error)
 oage3_log_pred <- predict(model, chig) # necessary step to get training RMSE
 postResample(pred = oage3_log_pred, obs = chig$oage3_log) #To get training RMSE
 #Compare training RMSE to (full) RMSE
+
+############################################
+# Now do the same for age2 regressed on age1 
+# model for ocean age 3 (oage2)
+oage2_model_1 <- lm(oage2 ~ oage1, data = chig)
+#preds_oage2_model_1 <- evaluate_model(oage2_model_1, data = chig)
+layout(matrix(c(1,2,3,4),2,2))
+plot(oage2_model_1)
+summary(oage2_model_1) # show results
+r2 = format(summary(oage2_model_1)$r.squared, digits = 3)
+RSS <- c(crossprod(oage2_model_1$residuals))
+MSE <- RSS / length(oage2_model_1$residuals)
+(RMSE <- sqrt(MSE))
+
+#use to plot the new predicted point on the graph
+new_data <- data.frame(oage1= 553.69615 ) #put in 2017 year oage1 *Note need to automate this
+
+newpoint <- broom::augment(oage2_model_1, newdata = new_data)
+(pred <- predict(oage2_model_1, newdata = new_data, interval = "prediction", level = 0.95))
+lwr <- pred[2]
+upr <- pred[3]
+predict(oage2_model_1, newdata = new_data, interval = "confidence", level = 0.95)
+
+#Use to make 95% CI and PI 
+minoage1 <- round(min(chig$oage1, na.rm = TRUE),0)
+maxoage1 <- round(max(chig$oage1, na.rm = TRUE),0)
+predx <- data.frame(oage1 = seq(from = minoage1, to = maxoage1, by = (maxoage1-minoage1)/19))
+
+# ... confidence interval
+conf.int <- cbind(predx, predict(oage2_model_1, newdata = predx, interval = "confidence", level = 0.95))
+
+# ... prediction interval
+pred.int <- cbind(predx, predict(oage2_model_1, newdata = predx, interval = "prediction", level = 0.95))
+
+m <- oage2_model_1
+#Add text to the graph
+lm_eqn <- function(df){
+  m <- lm(oage2 ~ oage1, df);
+  eq <- substitute(italic(oage2) == a + b %.% italic(oage1)*","~~italic(r)^2~"="~r2, 
+                   list(a = format(coef(m)[1], digits = 2), 
+                        b = format(coef(m)[2], digits = 2), 
+                        r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));                 
+}
+
+lm_eqn(chig)
+# 
+g.pred <- ggplot(pred.int, aes(x = oage1, y = fit)) +
+  geom_point(data = chig, aes(x = oage1, y = oage2)) + #plots all the points
+  geom_text_repel(data = chig, aes(x = oage1, y = oage2, label = outmigration_year), size = 6) +
+  geom_smooth(data = pred.int, aes(ymin = lwr, ymax = upr), stat = "identity") + # prediction interval
+  geom_point(data = newpoint, aes(y = .fitted), size = 3, color = "red") + # adds this years new point
+  #geom_text(data = newpoint, aes(x = oage1, y = .fitted, label = round(.fitted, 0 )), adj = 1, size = 6) +  
+  geom_text(data = newpoint, aes(x = oage1, y = .fitted, label = "2017"), adj = 6) +  
+  geom_smooth(data = conf.int, aes(ymin = lwr, ymax = upr), stat = "identity") + #confidence interval
+  #geom_text(x = 5, y = 75000, label = lm_eqn(chig), parse = TRUE, adj = 0, size = 10) +
+  expand_limits(y=c(0 , 80000)) +
+  expand_limits(x=c(0 , 50)) + #export, save copy to clip board 1400 X 1200 for power point & 850 x 550 for document.
+  theme_bw() +
+  theme(text = element_text(size=12), axis.text.x = element_text(size = 12), axis.text.y = element_text(size = 12)) +
+  xlab("oage1") +
+  ylab("oage2") +
+  ggtitle("oage2 vs age2")
+
+g.pred  
+
+#Repeated K- fold Cross validation
+
+# define training control 
+train_control <- trainControl(method="repeatedcv", number=10, repeats=4)
+#I used number of K-folds = 4 since I have 4*5 = 210 is lose to the 20 years of data I have
+
+# train the model
+model <- train(oage2 ~ oage1, data=chig, trControl=train_control, method="lm")
+# summarize results
+print(model) #get full model RMSE (Root Mean Square Error)
+
+oage2_pred <- predict(model, chig) # necessary step to get training RMSE
+postResample(pred = oage2_pred, obs = chig$oage2) #To get training RMSE
+#Compare training RMSE to (full) RMSE
+
+
+
+
+# log models
+
+# model for ocean age 2 (oage2)
+oage2_log_model_1 <- lm(oage2_log ~ oage1, data = chig)
+#preds_oage2_log_model_1 <- evaluate_model(oage2_log_model_1, data = chig)
+layout(matrix(c(1,2,3,4),2,2))
+plot(oage2_log_model_1)
+summary(oage2_log_model_1) # show results
+r2 = format(summary(oage2_log_model_1)$r.squared, digits = 3)
+RSS <- c(crossprod(oage2_log_model_1$residuals))
+MSE <- RSS / length(oage2_log_model_1$residuals)
+(RMSE <- sqrt(MSE))
+
+#use to plot the new predicted point on the graph
+new_data <- data.frame(oage1=  553.69615) #put in 2016 year oage1 *Note need to automate this
+
+newpoint <- broom::augment(oage2_log_model_1, newdata = new_data)
+(pred <- predict(oage2_log_model_1, newdata = new_data, interval = "prediction", level = 0.95))
+pred <- exp(pred)
+lwr <- pred[2]
+upr <- pred[3]
+exp(predict(oage2_log_model_1, newdata = new_data, interval = "confidence", level = 0.95))
+
+#Use to make 95% CI and PI 
+minoage1 <- round(min(chig$oage1, na.rm = TRUE),0)
+maxoage1 <- round(max(chig$oage1, na.rm = TRUE),0)
+predx <- data.frame(oage1 = seq(from = minoage1, to = maxoage1, by = (maxoage1-minoage1)/19))
+
+# ... confidence interval
+conf.int <- cbind(predx, exp(predict(oage2_log_model_1, newdata = predx, interval = "confidence", level = 0.95)))
+
+# ... prediction interval
+pred.int <- cbind(predx, exp(predict(oage2_log_model_1, newdata = predx, interval = "prediction", level = 0.95)))
+
+m <- oage2_log_model_1
+#Add text to the graph
+lm_eqn <- function(df){
+  m <- lm(oage2_log ~ oage1, df);
+  eq <- substitute(italic(oage2_log) == a + b %.% italic(oage1)*","~~italic(r)^2~"="~r2, 
+                   list(a = format(coef(m)[1], digits = 2), 
+                        b = format(coef(m)[2], digits = 2), 
+                        r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));                 
+}
+
+lm_eqn(chig)
+# 
+g.pred <- ggplot(pred.int, aes(x = oage1, y = fit)) +
+  geom_point(data = chig, aes(x = oage1, y = oage2)) + #plots all the points
+  geom_text_repel(data = chig, aes(x = oage1, y = oage2, label = outmigration_year), size = 6) +
+  geom_smooth(data = pred.int, aes(ymin = lwr, ymax = upr), stat = "identity") + # prediction interval
+  geom_point(data = newpoint, aes(y = exp(.fitted)), size = 3, color = "red") + # adds this years new point
+  #geom_text(data = newpoint, aes(x = oage1, y = .fitted, label = round(.fitted, 0 )), adj = 1, size = 6) +  
+  geom_text(data = newpoint, aes(x = oage1, y = .fitted, label = "2017"), adj = 6) +  
+  geom_smooth(data = conf.int, aes(ymin = lwr, ymax = upr), stat = "identity") + #confidence interval
+  #geom_text(x = 5, y = 75000, label = lm_eqn(chig), parse = TRUE, adj = 0, size = 10) +
+  expand_limits(y=c(0 , 80000)) +
+  expand_limits(x=c(0 , 50)) + #export, save copy to clip board 1400 X 1200 for power point & 850 x 550 for document.
+  theme_bw() +
+  theme(text = element_text(size=12), axis.text.x = element_text(size = 12), axis.text.y = element_text(size = 12)) +
+  xlab("oage1") +
+  ylab("oage2") +
+  ggtitle("oage2_log vs age2")
+
+g.pred  
+
+#Repeated K- fold Cross validation
+
+# define training control 
+train_control <- trainControl(method="repeatedcv", number=10, repeats=4)
+#I used number of K-folds = 4 since I have 4*5 = 210 is lose to the 20 years of data I have
+
+# train the model
+model <- train(oage2_log ~ oage1, data=chig, trControl=train_control, method="lm")
+# summarize results
+print(model) #get full model RMSE (Root Mean Square Error)
+
+oage2_log_pred <- predict(model, chig) # necessary step to get training RMSE
+postResample(pred = oage2_log_pred, obs = chig$oage2_log) #To get training RMSE
+#Compare training RMSE to (full) RMSE
+
+
+#######################################
+#log model with results/graph in log scale
+oage2_log_model_1 <- lm(oage2_log ~ oage1, data = chig)
+#preds_oage2_log_model_1 <- evaluate_model(oage2_log_model_1, data = chig)
+layout(matrix(c(1,2,3,4),2,2))
+plot(oage2_log_model_1)
+summary(oage2_log_model_1) # show results
+r2 = format(summary(oage2_log_model_1)$r.squared, digits = 3)
+RSS <- c(crossprod(oage2_log_model_1$residuals))
+MSE <- RSS / length(oage2_log_model_1$residuals)
+(RMSE <- sqrt(MSE))
+
+#use to plot the new predicted point on the graph
+new_data <- data.frame(oage1=  553.69615) #put in 2016 year oage1 *Note need to automate this
+
+newpoint <- broom::augment(oage2_log_model_1, newdata = new_data)
+(pred <- predict(oage2_log_model_1, newdata = new_data, interval = "prediction", level = 0.95))
+#pred <- exp(pred)
+lwr <- pred[2]
+upr <- pred[3]
+predict(oage2_log_model_1, newdata = new_data, interval = "confidence", level = 0.95)
+
+#Use to make 95% CI and PI 
+minoage1 <- round(min(chig$oage1, na.rm = TRUE),0)
+maxoage1 <- round(max(chig$oage1, na.rm = TRUE),0)
+predx <- data.frame(oage1 = seq(from = minoage1, to = maxoage1, by = (maxoage1-minoage1)/19))
+
+# ... confidence interval
+conf.int <- cbind(predx, predict(oage2_log_model_1, newdata = predx, interval = "confidence", level = 0.95))
+
+# ... prediction interval
+pred.int <- cbind(predx, predict(oage2_log_model_1, newdata = predx, interval = "prediction", level = 0.95))
+
+m <- oage2_log_model_1
+#Add text to the graph
+lm_eqn <- function(df){
+  m <- lm(oage2_log ~ oage1, df);
+  eq <- substitute(italic(oage2_log) == a + b %.% italic(oage1)*","~~italic(r)^2~"="~r2, 
+                   list(a = format(coef(m)[1], digits = 2), 
+                        b = format(coef(m)[2], digits = 2), 
+                        r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));                 
+}
+
+lm_eqn(chig)
+# 
+g.pred <- ggplot(pred.int, aes(x = oage1, y = fit)) +
+  geom_point(data = chig, aes(x = oage1, y = oage2_log)) + #plots all the points
+  geom_text_repel(data = chig, aes(x = oage1, y = oage2_log, label = outmigration_year), size = 6) +
+  geom_smooth(data = pred.int, aes(ymin = lwr, ymax = upr), stat = "identity") + # prediction interval
+  geom_point(data = newpoint, aes(y = .fitted), size = 3, color = "red") + # adds this years new point
+  #geom_text(data = newpoint, aes(x = oage1, y = .fitted, label = round(.fitted, 0 )), adj = 1, size = 6) +  
+  geom_text(data = newpoint, aes(x = oage1, y = .fitted, label = "2017"), adj = 6) +  
+  geom_smooth(data = conf.int, aes(ymin = lwr, ymax = upr), stat = "identity") + #confidence interval
+  #geom_text(x = 5, y = 75000, label = lm_eqn(chig), parse = TRUE, adj = 0, size = 10) +
+  #expand_limits(y=c(0 , 80000)) +
+  #expand_limits(x=c(0 , 50)) + #export, save copy to clip board 1400 X 1200 for power point & 850 x 550 for document.
+  theme_bw() +
+  theme(text = element_text(size=12), axis.text.x = element_text(size = 12), axis.text.y = element_text(size = 12)) +
+  xlab("oage1") +
+  ylab("oage2") +
+  ggtitle("oage2_log vs age2")
+
+g.pred  
+
+#Repeated K- fold Cross validation
+
+# define training control 
+train_control <- trainControl(method="repeatedcv", number=10, repeats=4)
+#I used number of K-folds = 4 since I have 4*5 = 210 is lose to the 20 years of data I have
+
+# train the model
+model <- train(oage2_log ~ oage1, data=chig, trControl=train_control, method="lm")
+# summarize results
+print(model) #get full model RMSE (Root Mean Square Error)
+
+oage2_log_pred <- predict(model, chig) # necessary step to get training RMSE
+postResample(pred = oage2_log_pred, obs = chig$oage2_log) #To get training RMSE
