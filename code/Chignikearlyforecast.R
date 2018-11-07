@@ -327,7 +327,7 @@ g.pred <- ggplot(pred.int, aes(x = oage1, y = fit)) +
   theme(text = element_text(size=12), axis.text.x = element_text(size = 12), axis.text.y = element_text(size = 12)) +
   xlab("oage1") +
   ylab("oage2") +
-  ggtitle("oage2 vs age2")
+  ggtitle("oage2 vs age1")
 
 g.pred  
 
@@ -411,7 +411,7 @@ g.pred <- ggplot(pred.int, aes(x = oage1, y = fit)) +
   theme(text = element_text(size=12), axis.text.x = element_text(size = 12), axis.text.y = element_text(size = 12)) +
   xlab("oage1") +
   ylab("oage2") +
-  ggtitle("oage2_log vs age2")
+  ggtitle("oage2_log vs 0age1")
 
 g.pred  
 
@@ -492,7 +492,7 @@ g.pred <- ggplot(pred.int, aes(x = oage1, y = fit)) +
   theme(text = element_text(size=12), axis.text.x = element_text(size = 12), axis.text.y = element_text(size = 12)) +
   xlab("oage1") +
   ylab("oage2") +
-  ggtitle("oage2_log vs age2")
+  ggtitle("oage2_log vs oage1")
 
 g.pred  
 
@@ -509,3 +509,4 @@ print(model) #get full model RMSE (Root Mean Square Error)
 
 oage2_log_pred <- predict(model, chig) # necessary step to get training RMSE
 postResample(pred = oage2_log_pred, obs = chig$oage2_log) #To get training RMSE
+
