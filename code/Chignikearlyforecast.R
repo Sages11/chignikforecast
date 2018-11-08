@@ -15,13 +15,17 @@ options(scipen=999)
 # data ----
 chig <- read_csv('data/Chignik Early_Run2019fx.csv') %>%
   select(-oage5, -Total) %>%
-  filter(outmigration_year >= 1977 & outmigration_year < 2016) %>%
+  filter(outmigration_year >= 1995 & outmigration_year < 2016) %>%
   mutate(oage2_log = log(oage2),
          oage3_log = log(oage3))
 
 # analysis ----
 oage1_median <- median(chig$oage1, na.rm = TRUE) 
 oage4_median <- median(chig$oage4, na.rm = TRUE)
+oage1_med1090 <- quantile(chig$oage1, probs = c(0.5, 0.10, 0.90), na.rm = TRUE) 
+oage4_med1090 <- quantile(chig$oage4, probs = c(0.5, 0.10, 0.90), na.rm = TRUE) 
+
+summary(chig$oage1)
 
 # model for ocean age 3 (oage3)
 oage3_model_1 <- lm(oage3 ~ oage2, data = chig)
@@ -38,10 +42,10 @@ MSE <- RSS / length(oage3_model_1$residuals)
 new_data <- data.frame(oage2=  135057.48) #put in 2016 year oage2 *Note need to automate this
 
 newpoint <- broom::augment(oage3_model_1, newdata = new_data)
-(pred <- predict(oage3_model_1, newdata = new_data, interval = "prediction", level = 0.95))
+(pred <- pred3 <- predict(oage3_model_1, newdata = new_data, interval = "prediction", level = 0.95))
 lwr <- pred[2]
 upr <- pred[3]
-predict(oage3_model_1, newdata = new_data, interval = "confidence", level = 0.95)
+conf3 <- predict(oage3_model_1, newdata = new_data, interval = "confidence", level = 0.95)
 
 #Use to make 95% CI and PI 
 minoage2 <- round(min(chig$oage2, na.rm = TRUE),0)
@@ -122,10 +126,10 @@ new_data <- data.frame(oage2=  135057.48) #put in 2016 year oage2 *Note need to 
 
 newpoint <- broom::augment(oage3_log_model_1, newdata = new_data)
 (pred <- predict(oage3_log_model_1, newdata = new_data, interval = "prediction", level = 0.95))
-pred <- exp(pred)
+pred <- pred3log <-exp(pred)
 lwr <- pred[2]
 upr <- pred[3]
-exp(predict(oage3_log_model_1, newdata = new_data, interval = "confidence", level = 0.95))
+conf3log <-exp(predict(oage3_log_model_1, newdata = new_data, interval = "confidence", level = 0.95))
 
 #Use to make 95% CI and PI 
 minoage2 <- round(min(chig$oage2, na.rm = TRUE),0)
@@ -283,10 +287,10 @@ MSE <- RSS / length(oage2_model_1$residuals)
 new_data <- data.frame(oage1= 553.69615 ) #put in 2017 year oage1 *Note need to automate this
 
 newpoint <- broom::augment(oage2_model_1, newdata = new_data)
-(pred <- predict(oage2_model_1, newdata = new_data, interval = "prediction", level = 0.95))
+(pred <- pred2 <- predict(oage2_model_1, newdata = new_data, interval = "prediction", level = 0.95))
 lwr <- pred[2]
 upr <- pred[3]
-predict(oage2_model_1, newdata = new_data, interval = "confidence", level = 0.95)
+conf2 <- predict(oage2_model_1, newdata = new_data, interval = "confidence", level = 0.95)
 
 #Use to make 95% CI and PI 
 minoage1 <- round(min(chig$oage1, na.rm = TRUE),0)
@@ -367,10 +371,10 @@ new_data <- data.frame(oage1=  553.69615) #put in 2016 year oage1 *Note need to 
 
 newpoint <- broom::augment(oage2_log_model_1, newdata = new_data)
 (pred <- predict(oage2_log_model_1, newdata = new_data, interval = "prediction", level = 0.95))
-pred <- exp(pred)
+pred <- pred2log <- exp(pred)
 lwr <- pred[2]
 upr <- pred[3]
-exp(predict(oage2_log_model_1, newdata = new_data, interval = "confidence", level = 0.95))
+conf2log <-exp(predict(oage2_log_model_1, newdata = new_data, interval = "confidence", level = 0.95))
 
 #Use to make 95% CI and PI 
 minoage1 <- round(min(chig$oage1, na.rm = TRUE),0)
@@ -510,3 +514,13 @@ print(model) #get full model RMSE (Root Mean Square Error)
 oage2_log_pred <- predict(model, chig) # necessary step to get training RMSE
 postResample(pred = oage2_log_pred, obs = chig$oage2_log) #To get training RMSE
 
+pred3
+conf3
+pred3log
+conf3log
+
+pred2
+conf2
+pred2log
+conf2log
+r2
