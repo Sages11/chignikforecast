@@ -528,24 +528,55 @@ pred2log
 conf2log
 r2
 #doug Eggers method:
-# Sum the squares of  1/2 90CI range for each age class
+# sqrt(Sum of squares of  1/2 90PI range for each age class)
 
-
-(pred3[3]-pred3[2])/2)^2
 drange_sq <- function(vector){
   ((vector[3]-vector[2])/2)^2
 }
 
-drange <- function(vector){
-  ((vector[3]-vector[2])/2)
-}
-
 point_est <- sum(oage1_med1090[1], pred2[1], pred3[1], oage4_med1090[1])
+lwr_est <- sum(oage1_med1090[2],
+    pred2[2],
+    pred3[2],
+    oage4_med1090[2])
+
+upr_est <- sum(oage1_med1090[3],
+               pred2[3],
+               pred3[3],
+               oage4_med1090[3])
+pred_est <- c(point_est, lwr_est, upr_est)
 
 derange <-sqrt(sum(drange_sq(oage1_med1090),
          drange_sq(oage4_med1090),
          drange_sq(pred2),
          drange_sq(pred3)))
 
-eggers <- c(point_est, point_est - derange, point_est + derange)
+eggerslm <- c(point_est, point_est - derange, point_est + derange)
 
+
+
+lm_output <- rbind(oage1_med1090, pred2log, pred3log, oage4_med1090, pred_est, eggerslm )
+
+point_estlog <- sum(oage1_med1090[1], pred2log[1], pred3log[1], oage4_med1090[1])
+
+lwr_estlog <- sum(oage1_med1090[2],
+               pred2log[2],
+               pred3log[2],
+               oage4_med1090[2])
+
+upr_estlog <- sum(oage1_med1090[3],
+               pred2log[3],
+               pred3log[3],
+               oage4_med1090[3])
+pred_estlog <- c(point_estlog, lwr_estlog, upr_estlog)
+
+derangelog <-sqrt(sum(drange_sq(oage1_med1090),
+                   drange_sq(oage4_med1090),
+                   drange_sq(pred2log),
+                   drange_sq(pred3log)))
+
+eggerslog <- c(point_estlog, point_estlog - derangelog, point_estlog + derangelog)
+
+loglm_output <- rbind(oage1_med1090, pred2log, pred3log, oage4_med1090, pred_estlog, eggerslog )
+
+rbind(lm_output, loglm_output)
