@@ -15,7 +15,7 @@ options(scipen=999)
 # data ----
 chig <- read_csv('data/Chignik Early_Run2019fx.csv') %>%
   select(-oage5, -Total) %>%
-  filter(outmigration_year >= 1995 & outmigration_year < 2016) %>%
+  filter(outmigration_year >= 1998 & outmigration_year < 2017) %>%
   mutate(oage2_log = log(oage2),
          oage3_log = log(oage3))
 
@@ -42,10 +42,10 @@ MSE <- RSS / length(oage3_model_1$residuals)
 new_data <- data.frame(oage2=  135057.48) #put in 2016 year oage2 *Note need to automate this
 
 newpoint <- broom::augment(oage3_model_1, newdata = new_data)
-(pred <- pred3 <- predict(oage3_model_1, newdata = new_data, interval = "prediction", level = 0.95))
+(pred <- pred3 <- predict(oage3_model_1, newdata = new_data, interval = "prediction", level = 0.90))
 lwr <- pred[2]
 upr <- pred[3]
-conf3 <- predict(oage3_model_1, newdata = new_data, interval = "confidence", level = 0.95)
+conf3 <- predict(oage3_model_1, newdata = new_data, interval = "confidence", level = 0.90)
 
 #Use to make 95% CI and PI 
 minoage2 <- round(min(chig$oage2, na.rm = TRUE),0)
@@ -53,10 +53,10 @@ maxoage2 <- round(max(chig$oage2, na.rm = TRUE),0)
 predx <- data.frame(oage2 = seq(from = minoage2, to = maxoage2, by = (maxoage2-minoage2)/19))
 
 # ... confidence interval
-conf.int <- cbind(predx, predict(oage3_model_1, newdata = predx, interval = "confidence", level = 0.95))
+conf.int <- cbind(predx, predict(oage3_model_1, newdata = predx, interval = "confidence", level = 0.90))
 
 # ... prediction interval
-pred.int <- cbind(predx, predict(oage3_model_1, newdata = predx, interval = "prediction", level = 0.95))
+pred.int <- cbind(predx, predict(oage3_model_1, newdata = predx, interval = "prediction", level = 0.90))
 
 m <- oage3_model_1
 #Add text to the graph
@@ -125,11 +125,11 @@ MSE <- RSS / length(oage3_log_model_1$residuals)
 new_data <- data.frame(oage2=  135057.48) #put in 2016 year oage2 *Note need to automate this
 
 newpoint <- broom::augment(oage3_log_model_1, newdata = new_data)
-(pred <- predict(oage3_log_model_1, newdata = new_data, interval = "prediction", level = 0.95))
+(pred <- predict(oage3_log_model_1, newdata = new_data, interval = "prediction", level = 0.90))
 pred <- pred3log <-exp(pred)
 lwr <- pred[2]
 upr <- pred[3]
-conf3log <-exp(predict(oage3_log_model_1, newdata = new_data, interval = "confidence", level = 0.95))
+conf3log <-exp(predict(oage3_log_model_1, newdata = new_data, interval = "confidence", level = 0.90))
 
 #Use to make 95% CI and PI 
 minoage2 <- round(min(chig$oage2, na.rm = TRUE),0)
@@ -137,10 +137,10 @@ maxoage2 <- round(max(chig$oage2, na.rm = TRUE),0)
 predx <- data.frame(oage2 = seq(from = minoage2, to = maxoage2, by = (maxoage2-minoage2)/19))
 
 # ... confidence interval
-conf.int <- cbind(predx, exp(predict(oage3_log_model_1, newdata = predx, interval = "confidence", level = 0.95)))
+conf.int <- cbind(predx, exp(predict(oage3_log_model_1, newdata = predx, interval = "confidence", level = 0.90)))
 
 # ... prediction interval
-pred.int <- cbind(predx, exp(predict(oage3_log_model_1, newdata = predx, interval = "prediction", level = 0.95)))
+pred.int <- cbind(predx, exp(predict(oage3_log_model_1, newdata = predx, interval = "prediction", level = 0.90)))
 
 m <- oage3_log_model_1
 #Add text to the graph
@@ -206,11 +206,11 @@ MSE <- RSS / length(oage3_log_model_1$residuals)
 new_data <- data.frame(oage2=  135057.48) #put in 2016 year oage2 *Note need to automate this
 
 newpoint <- broom::augment(oage3_log_model_1, newdata = new_data)
-(pred <- predict(oage3_log_model_1, newdata = new_data, interval = "prediction", level = 0.95))
+(pred <- predict(oage3_log_model_1, newdata = new_data, interval = "prediction", level = 0.90))
 #pred <- exp(pred)
 lwr <- pred[2]
 upr <- pred[3]
-predict(oage3_log_model_1, newdata = new_data, interval = "confidence", level = 0.95)
+predict(oage3_log_model_1, newdata = new_data, interval = "confidence", level = 0.90)
 
 #Use to make 95% CI and PI 
 minoage2 <- round(min(chig$oage2, na.rm = TRUE),0)
@@ -218,10 +218,10 @@ maxoage2 <- round(max(chig$oage2, na.rm = TRUE),0)
 predx <- data.frame(oage2 = seq(from = minoage2, to = maxoage2, by = (maxoage2-minoage2)/19))
 
 # ... confidence interval
-conf.int <- cbind(predx, predict(oage3_log_model_1, newdata = predx, interval = "confidence", level = 0.95))
+conf.int <- cbind(predx, predict(oage3_log_model_1, newdata = predx, interval = "confidence", level = 0.90))
 
 # ... prediction interval
-pred.int <- cbind(predx, predict(oage3_log_model_1, newdata = predx, interval = "prediction", level = 0.95))
+pred.int <- cbind(predx, predict(oage3_log_model_1, newdata = predx, interval = "prediction", level = 0.90))
 
 m <- oage3_log_model_1
 #Add text to the graph
@@ -287,10 +287,10 @@ MSE <- RSS / length(oage2_model_1$residuals)
 new_data <- data.frame(oage1= 553.69615 ) #put in 2017 year oage1 *Note need to automate this
 
 newpoint <- broom::augment(oage2_model_1, newdata = new_data)
-(pred <- pred2 <- predict(oage2_model_1, newdata = new_data, interval = "prediction", level = 0.95))
+(pred <- pred2 <- predict(oage2_model_1, newdata = new_data, interval = "prediction", level = 0.90))
 lwr <- pred[2]
 upr <- pred[3]
-conf2 <- predict(oage2_model_1, newdata = new_data, interval = "confidence", level = 0.95)
+conf2 <- predict(oage2_model_1, newdata = new_data, interval = "confidence", level = 0.90)
 
 #Use to make 95% CI and PI 
 minoage1 <- round(min(chig$oage1, na.rm = TRUE),0)
@@ -298,10 +298,10 @@ maxoage1 <- round(max(chig$oage1, na.rm = TRUE),0)
 predx <- data.frame(oage1 = seq(from = minoage1, to = maxoage1, by = (maxoage1-minoage1)/19))
 
 # ... confidence interval
-conf.int <- cbind(predx, predict(oage2_model_1, newdata = predx, interval = "confidence", level = 0.95))
+conf.int <- cbind(predx, predict(oage2_model_1, newdata = predx, interval = "confidence", level = 0.90))
 
 # ... prediction interval
-pred.int <- cbind(predx, predict(oage2_model_1, newdata = predx, interval = "prediction", level = 0.95))
+pred.int <- cbind(predx, predict(oage2_model_1, newdata = predx, interval = "prediction", level = 0.90))
 
 m <- oage2_model_1
 #Add text to the graph
@@ -370,11 +370,11 @@ MSE <- RSS / length(oage2_log_model_1$residuals)
 new_data <- data.frame(oage1=  553.69615) #put in 2016 year oage1 *Note need to automate this
 
 newpoint <- broom::augment(oage2_log_model_1, newdata = new_data)
-(pred <- predict(oage2_log_model_1, newdata = new_data, interval = "prediction", level = 0.95))
+(pred <- predict(oage2_log_model_1, newdata = new_data, interval = "prediction", level = 0.90))
 pred <- pred2log <- exp(pred)
 lwr <- pred[2]
 upr <- pred[3]
-conf2log <-exp(predict(oage2_log_model_1, newdata = new_data, interval = "confidence", level = 0.95))
+conf2log <-exp(predict(oage2_log_model_1, newdata = new_data, interval = "confidence", level = 0.90))
 
 #Use to make 95% CI and PI 
 minoage1 <- round(min(chig$oage1, na.rm = TRUE),0)
@@ -382,10 +382,10 @@ maxoage1 <- round(max(chig$oage1, na.rm = TRUE),0)
 predx <- data.frame(oage1 = seq(from = minoage1, to = maxoage1, by = (maxoage1-minoage1)/19))
 
 # ... confidence interval
-conf.int <- cbind(predx, exp(predict(oage2_log_model_1, newdata = predx, interval = "confidence", level = 0.95)))
+conf.int <- cbind(predx, exp(predict(oage2_log_model_1, newdata = predx, interval = "confidence", level = 0.90)))
 
 # ... prediction interval
-pred.int <- cbind(predx, exp(predict(oage2_log_model_1, newdata = predx, interval = "prediction", level = 0.95)))
+pred.int <- cbind(predx, exp(predict(oage2_log_model_1, newdata = predx, interval = "prediction", level = 0.90)))
 
 m <- oage2_log_model_1
 #Add text to the graph
@@ -451,11 +451,11 @@ MSE <- RSS / length(oage2_log_model_1$residuals)
 new_data <- data.frame(oage1=  553.69615) #put in 2016 year oage1 *Note need to automate this
 
 newpoint <- broom::augment(oage2_log_model_1, newdata = new_data)
-(pred <- predict(oage2_log_model_1, newdata = new_data, interval = "prediction", level = 0.95))
+(pred <- predict(oage2_log_model_1, newdata = new_data, interval = "prediction", level = 0.90))
 #pred <- exp(pred)
 lwr <- pred[2]
 upr <- pred[3]
-predict(oage2_log_model_1, newdata = new_data, interval = "confidence", level = 0.95)
+predict(oage2_log_model_1, newdata = new_data, interval = "confidence", level = 0.90)
 
 #Use to make 95% CI and PI 
 minoage1 <- round(min(chig$oage1, na.rm = TRUE),0)
@@ -463,10 +463,10 @@ maxoage1 <- round(max(chig$oage1, na.rm = TRUE),0)
 predx <- data.frame(oage1 = seq(from = minoage1, to = maxoage1, by = (maxoage1-minoage1)/19))
 
 # ... confidence interval
-conf.int <- cbind(predx, predict(oage2_log_model_1, newdata = predx, interval = "confidence", level = 0.95))
+conf.int <- cbind(predx, predict(oage2_log_model_1, newdata = predx, interval = "confidence", level = 0.90))
 
 # ... prediction interval
-pred.int <- cbind(predx, predict(oage2_log_model_1, newdata = predx, interval = "prediction", level = 0.95))
+pred.int <- cbind(predx, predict(oage2_log_model_1, newdata = predx, interval = "prediction", level = 0.90))
 
 m <- oage2_log_model_1
 #Add text to the graph
@@ -514,6 +514,9 @@ print(model) #get full model RMSE (Root Mean Square Error)
 oage2_log_pred <- predict(model, chig) # necessary step to get training RMSE
 postResample(pred = oage2_log_pred, obs = chig$oage2_log) #To get training RMSE
 
+oage1_med1090 
+oage4_med1090 
+
 pred3
 conf3
 pred3log
@@ -524,3 +527,25 @@ conf2
 pred2log
 conf2log
 r2
+#doug Eggers method:
+# Sum the squares of  1/2 90CI range for each age class
+
+
+(pred3[3]-pred3[2])/2)^2
+drange_sq <- function(vector){
+  ((vector[3]-vector[2])/2)^2
+}
+
+drange <- function(vector){
+  ((vector[3]-vector[2])/2)
+}
+
+point_est <- sum(oage1_med1090[1], pred2[1], pred3[1], oage4_med1090[1])
+
+derange <-sqrt(sum(drange_sq(oage1_med1090),
+         drange_sq(oage4_med1090),
+         drange_sq(pred2),
+         drange_sq(pred3)))
+
+eggers <- c(point_est, point_est - derange, point_est + derange)
+
