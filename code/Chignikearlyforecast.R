@@ -1,5 +1,5 @@
 # notes ----
-# chigkik forecast
+# chignik forecast
 # sarah.power@alaska.gov
 # 11/06/2018
 
@@ -9,38 +9,39 @@ library(lubridate)
 library(ggrepel)
 library(broom)#for cleaning up data, used in predction
 library(caret)#used for cross validation 
+library(car)
 library(here)
+
 options(scipen=999)
 
 # data ----
 chig <- read_csv('data/Chignik Early_Run2019fx.csv') %>%
   select(-oage5, -Total) %>%
-  filter(outmigration_year >= 1998 & outmigration_year < 2017) %>%
+  filter(outmigration_year >= 2003 & outmigration_year < 2016) %>%
   mutate(oage2_log = log(oage2),
          oage3_log = log(oage3))
 
 # analysis ----
-oage1_median <- median(chig$oage1, na.rm = TRUE) 
-oage4_median <- median(chig$oage4, na.rm = TRUE)
+
+#median values are used for the ocean age 1's and 4's:
 oage1_med1090 <- quantile(chig$oage1, probs = c(0.5, 0.10, 0.90), na.rm = TRUE) 
 oage4_med1090 <- quantile(chig$oage4, probs = c(0.5, 0.10, 0.90), na.rm = TRUE) 
 
-summary(chig$oage1)
 
-# model for ocean age 3 (oage3)
+#regression model for ocean age 3 (oage3)
 oage3_model_1 <- lm(oage3 ~ oage2, data = chig)
-#preds_oage3_model_1 <- evaluate_model(oage3_model_1, data = chig)
 layout(matrix(c(1,2,3,4),2,2))
 plot(oage3_model_1)
 summary(oage3_model_1) # show results
-r2 = format(summary(oage3_model_1)$r.squared, digits = 3)
-RSS <- c(crossprod(oage3_model_1$residuals))
-MSE <- RSS / length(oage3_model_1$residuals)
-(RMSE <- sqrt(MSE))
+r2 = format(summary(oage3_model_1)$adj.r.squared, digits = 3)
+#RSS <- c(crossprod(oage3_model_1$residuals))
+#MSE <- RSS / length(oage3_model_1$residuals)
+#(RMSE <- sqrt(MSE))
 
 #use to plot the new predicted point on the graph
 new_data <- data.frame(oage2=  135057.48) #put in 2016 year oage2 *Note need to automate this
-
+chig$lmresid <- residuals.lm(oage3_model_1)
+chig$lm_percent_off <- round(chig$lmresid/chig$oage3 *100, 0)
 newpoint <- broom::augment(oage3_model_1, newdata = new_data)
 (pred <- pred3 <- predict(oage3_model_1, newdata = new_data, interval = "prediction", level = 0.90))
 lwr <- pred[2]
@@ -65,7 +66,7 @@ lm_eqn <- function(df){
   eq <- substitute(italic(oage3) == a + b %.% italic(oage2)*","~~italic(r)^2~"="~r2, 
                    list(a = format(coef(m)[1], digits = 2), 
                         b = format(coef(m)[2], digits = 2), 
-                        r2 = format(summary(m)$r.squared, digits = 3)))
+                        r2 = format(summary(m)$adj.r.squared, digits = 3)))
   as.character(as.expression(eq));                 
 }
 
@@ -80,8 +81,8 @@ g.pred <- ggplot(pred.int, aes(x = oage2, y = fit)) +
   geom_text(data = newpoint, aes(x = oage2, y = .fitted, label = "2017"), adj = 6) +  
   geom_smooth(data = conf.int, aes(ymin = lwr, ymax = upr), stat = "identity") + #confidence interval
   #geom_text(x = 5, y = 75000, label = lm_eqn(chig), parse = TRUE, adj = 0, size = 10) +
-  expand_limits(y=c(0 , 80000)) +
-  expand_limits(x=c(0 , 50)) + #export, save copy to clip board 1400 X 1200 for power point & 850 x 550 for document.
+  #export, save copy to clip board 1400 X 1200 for power point & 850 x 550 for document.
+  coord_cartesian(ylim = c(0, 3500000), xlim = c(0, 550000)) +
   theme_bw() +
   theme(text = element_text(size=12), axis.text.x = element_text(size = 12), axis.text.y = element_text(size = 12)) +
   xlab("oage2") +
@@ -93,7 +94,7 @@ g.pred
 #Repeated K- fold Cross validation
 
 # define training control 
-train_control <- trainControl(method="repeatedcv", number=10, repeats=4)
+train_control <- trainControl(method="repeatedcv", number=9, repeats=4)
 #I used number of K-folds = 4 since I have 4*5 = 210 is lose to the 20 years of data I have
 
 # train the model
@@ -112,15 +113,15 @@ postResample(pred = oage3_pred, obs = chig$oage3) #To get training RMSE
 
 # model for ocean age 3 (oage3)
 oage3_log_model_1 <- lm(oage3_log ~ oage2, data = chig)
-#preds_oage3_log_model_1 <- evaluate_model(oage3_log_model_1, data = chig)
 layout(matrix(c(1,2,3,4),2,2))
 plot(oage3_log_model_1)
-summary(oage3_log_model_1) # show results
-r2 = format(summary(oage3_log_model_1)$r.squared, digits = 3)
-RSS <- c(crossprod(oage3_log_model_1$residuals))
-MSE <- RSS / length(oage3_log_model_1$residuals)
-(RMSE <- sqrt(MSE))
-
+#summary(oage3_log_model_1) # show results
+r2 = format(summary(oage3_log_model_1)$adj.r.squared, digits = 3)
+#RSS <- c(crossprod(oage3_log_model_1$residuals))
+#MSE <- RSS / length(oage3_log_model_1$residuals)
+#(RMSE <- sqrt(MSE))
+chig$loglmresid <- chig$oage3 - exp(fitted.values(oage3_log_model_1))
+chig$loglm_percent_off <- round(chig$loglmresid/chig$oage3 *100, 0)
 #use to plot the new predicted point on the graph
 new_data <- data.frame(oage2=  135057.48) #put in 2016 year oage2 *Note need to automate this
 
@@ -149,7 +150,7 @@ lm_eqn <- function(df){
   eq <- substitute(italic(oage3_log) == a + b %.% italic(oage2)*","~~italic(r)^2~"="~r2, 
                    list(a = format(coef(m)[1], digits = 2), 
                         b = format(coef(m)[2], digits = 2), 
-                        r2 = format(summary(m)$r.squared, digits = 3)))
+                        r2 = format(summary(m)$adj.r.squared, digits = 3)))
   as.character(as.expression(eq));                 
 }
 
@@ -164,8 +165,8 @@ g.pred <- ggplot(pred.int, aes(x = oage2, y = fit)) +
   geom_text(data = newpoint, aes(x = oage2, y = .fitted, label = "2017"), adj = 6) +  
   geom_smooth(data = conf.int, aes(ymin = lwr, ymax = upr), stat = "identity") + #confidence interval
   #geom_text(x = 5, y = 75000, label = lm_eqn(chig), parse = TRUE, adj = 0, size = 10) +
-  expand_limits(y=c(0 , 80000)) +
-  expand_limits(x=c(0 , 50)) + #export, save copy to clip board 1400 X 1200 for power point & 850 x 550 for document.
+  coord_cartesian(ylim = c(0, 3500000), xlim = c(0, 550000)) +
+  #coord_cartesian() +#export, save copy to clip board 1400 X 1200 for power point & 850 x 550 for document.
   theme_bw() +
   theme(text = element_text(size=12), axis.text.x = element_text(size = 12), axis.text.y = element_text(size = 12)) +
   xlab("oage2") +
@@ -177,7 +178,7 @@ g.pred
 #Repeated K- fold Cross validation
 
 # define training control 
-train_control <- trainControl(method="repeatedcv", number=10, repeats=4)
+train_control <- trainControl(method="repeatedcv", number=9, repeats=4)
 #I used number of K-folds = 4 since I have 4*5 = 210 is lose to the 20 years of data I have
 
 # train the model
@@ -194,13 +195,6 @@ postResample(pred = oage3_log_pred, obs = chig$oage3_log) #To get training RMSE
 #log model with results/graph in log scale
 oage3_log_model_1 <- lm(oage3_log ~ oage2, data = chig)
 #preds_oage3_log_model_1 <- evaluate_model(oage3_log_model_1, data = chig)
-layout(matrix(c(1,2,3,4),2,2))
-plot(oage3_log_model_1)
-summary(oage3_log_model_1) # show results
-r2 = format(summary(oage3_log_model_1)$r.squared, digits = 3)
-RSS <- c(crossprod(oage3_log_model_1$residuals))
-MSE <- RSS / length(oage3_log_model_1$residuals)
-(RMSE <- sqrt(MSE))
 
 #use to plot the new predicted point on the graph
 new_data <- data.frame(oage2=  135057.48) #put in 2016 year oage2 *Note need to automate this
@@ -230,7 +224,7 @@ lm_eqn <- function(df){
   eq <- substitute(italic(oage3_log) == a + b %.% italic(oage2)*","~~italic(r)^2~"="~r2, 
                    list(a = format(coef(m)[1], digits = 2), 
                         b = format(coef(m)[2], digits = 2), 
-                        r2 = format(summary(m)$r.squared, digits = 3)))
+                        r2 = format(summary(m)$adj.r.squared, digits = 3)))
   as.character(as.expression(eq));                 
 }
 
@@ -245,8 +239,7 @@ g.pred <- ggplot(pred.int, aes(x = oage2, y = fit)) +
   geom_text(data = newpoint, aes(x = oage2, y = .fitted, label = "2017"), adj = 6) +  
   geom_smooth(data = conf.int, aes(ymin = lwr, ymax = upr), stat = "identity") + #confidence interval
   #geom_text(x = 5, y = 75000, label = lm_eqn(chig), parse = TRUE, adj = 0, size = 10) +
-  #expand_limits(y=c(0 , 80000)) +
-  #expand_limits(x=c(0 , 50)) + #export, save copy to clip board 1400 X 1200 for power point & 850 x 550 for document.
+  coord_cartesian(xlim = c(0, 550000)) + #export, save copy to clip board 1400 X 1200 for power point & 850 x 550 for document.
   theme_bw() +
   theme(text = element_text(size=12), axis.text.x = element_text(size = 12), axis.text.y = element_text(size = 12)) +
   xlab("oage2") +
@@ -258,7 +251,7 @@ g.pred
 #Repeated K- fold Cross validation
 
 # define training control 
-train_control <- trainControl(method="repeatedcv", number=10, repeats=4)
+train_control <- trainControl(method="repeatedcv", number=9, repeats=4)
 #I used number of K-folds = 4 since I have 4*5 = 210 is lose to the 20 years of data I have
 
 # train the model
@@ -278,7 +271,7 @@ oage2_model_1 <- lm(oage2 ~ oage1, data = chig)
 layout(matrix(c(1,2,3,4),2,2))
 plot(oage2_model_1)
 summary(oage2_model_1) # show results
-r2 = format(summary(oage2_model_1)$r.squared, digits = 3)
+r2 = format(summary(oage2_model_1)$adj.r.squared, digits = 3)
 RSS <- c(crossprod(oage2_model_1$residuals))
 MSE <- RSS / length(oage2_model_1$residuals)
 (RMSE <- sqrt(MSE))
@@ -310,7 +303,7 @@ lm_eqn <- function(df){
   eq <- substitute(italic(oage2) == a + b %.% italic(oage1)*","~~italic(r)^2~"="~r2, 
                    list(a = format(coef(m)[1], digits = 2), 
                         b = format(coef(m)[2], digits = 2), 
-                        r2 = format(summary(m)$r.squared, digits = 3)))
+                        r2 = format(summary(m)$adj.r.squared, digits = 3)))
   as.character(as.expression(eq));                 
 }
 
@@ -325,8 +318,7 @@ g.pred <- ggplot(pred.int, aes(x = oage1, y = fit)) +
   geom_text(data = newpoint, aes(x = oage1, y = .fitted, label = "2017"), adj = 6) +  
   geom_smooth(data = conf.int, aes(ymin = lwr, ymax = upr), stat = "identity") + #confidence interval
   #geom_text(x = 5, y = 75000, label = lm_eqn(chig), parse = TRUE, adj = 0, size = 10) +
-  expand_limits(y=c(0 , 80000)) +
-  expand_limits(x=c(0 , 50)) + #export, save copy to clip board 1400 X 1200 for power point & 850 x 550 for document.
+  coord_cartesian(ylim = c(0, 600000), xlim = c(0, 4750)) +  #export, save copy to clip board 1400 X 1200 for power point & 850 x 550 for document.
   theme_bw() +
   theme(text = element_text(size=12), axis.text.x = element_text(size = 12), axis.text.y = element_text(size = 12)) +
   xlab("oage1") +
@@ -338,7 +330,7 @@ g.pred
 #Repeated K- fold Cross validation
 
 # define training control 
-train_control <- trainControl(method="repeatedcv", number=10, repeats=4)
+train_control <- trainControl(method="repeatedcv", number=9, repeats=4)
 #I used number of K-folds = 4 since I have 4*5 = 210 is lose to the 20 years of data I have
 
 # train the model
@@ -361,7 +353,7 @@ oage2_log_model_1 <- lm(oage2_log ~ oage1, data = chig)
 layout(matrix(c(1,2,3,4),2,2))
 plot(oage2_log_model_1)
 summary(oage2_log_model_1) # show results
-r2 = format(summary(oage2_log_model_1)$r.squared, digits = 3)
+r2 = format(summary(oage2_log_model_1)$adj.r.squared, digits = 3)
 RSS <- c(crossprod(oage2_log_model_1$residuals))
 MSE <- RSS / length(oage2_log_model_1$residuals)
 (RMSE <- sqrt(MSE))
@@ -394,7 +386,7 @@ lm_eqn <- function(df){
   eq <- substitute(italic(oage2_log) == a + b %.% italic(oage1)*","~~italic(r)^2~"="~r2, 
                    list(a = format(coef(m)[1], digits = 2), 
                         b = format(coef(m)[2], digits = 2), 
-                        r2 = format(summary(m)$r.squared, digits = 3)))
+                        r2 = format(summary(m)$adj.r.squared, digits = 3)))
   as.character(as.expression(eq));                 
 }
 
@@ -409,8 +401,7 @@ g.pred <- ggplot(pred.int, aes(x = oage1, y = fit)) +
   geom_text(data = newpoint, aes(x = oage1, y = .fitted, label = "2017"), adj = 6) +  
   geom_smooth(data = conf.int, aes(ymin = lwr, ymax = upr), stat = "identity") + #confidence interval
   #geom_text(x = 5, y = 75000, label = lm_eqn(chig), parse = TRUE, adj = 0, size = 10) +
-  expand_limits(y=c(0 , 80000)) +
-  expand_limits(x=c(0 , 50)) + #export, save copy to clip board 1400 X 1200 for power point & 850 x 550 for document.
+  coord_cartesian(ylim = c(0, 600000), xlim = c(0, 4750)) + #export, save copy to clip board 1400 X 1200 for power point & 850 x 550 for document.
   theme_bw() +
   theme(text = element_text(size=12), axis.text.x = element_text(size = 12), axis.text.y = element_text(size = 12)) +
   xlab("oage1") +
@@ -422,7 +413,7 @@ g.pred
 #Repeated K- fold Cross validation
 
 # define training control 
-train_control <- trainControl(method="repeatedcv", number=10, repeats=4)
+train_control <- trainControl(method="repeatedcv", number=9, repeats=4)
 #I used number of K-folds = 4 since I have 4*5 = 210 is lose to the 20 years of data I have
 
 # train the model
@@ -442,7 +433,7 @@ oage2_log_model_1 <- lm(oage2_log ~ oage1, data = chig)
 layout(matrix(c(1,2,3,4),2,2))
 plot(oage2_log_model_1)
 summary(oage2_log_model_1) # show results
-r2 = format(summary(oage2_log_model_1)$r.squared, digits = 3)
+r2 = format(summary(oage2_log_model_1)$adj.r.squared, digits = 3)
 RSS <- c(crossprod(oage2_log_model_1$residuals))
 MSE <- RSS / length(oage2_log_model_1$residuals)
 (RMSE <- sqrt(MSE))
@@ -475,7 +466,7 @@ lm_eqn <- function(df){
   eq <- substitute(italic(oage2_log) == a + b %.% italic(oage1)*","~~italic(r)^2~"="~r2, 
                    list(a = format(coef(m)[1], digits = 2), 
                         b = format(coef(m)[2], digits = 2), 
-                        r2 = format(summary(m)$r.squared, digits = 3)))
+                        r2 = format(summary(m)$adj.r.squared, digits = 3)))
   as.character(as.expression(eq));                 
 }
 
@@ -490,8 +481,7 @@ g.pred <- ggplot(pred.int, aes(x = oage1, y = fit)) +
   geom_text(data = newpoint, aes(x = oage1, y = .fitted, label = "2017"), adj = 6) +  
   geom_smooth(data = conf.int, aes(ymin = lwr, ymax = upr), stat = "identity") + #confidence interval
   #geom_text(x = 5, y = 75000, label = lm_eqn(chig), parse = TRUE, adj = 0, size = 10) +
-  #expand_limits(y=c(0 , 80000)) +
-  #expand_limits(x=c(0 , 50)) + #export, save copy to clip board 1400 X 1200 for power point & 850 x 550 for document.
+  coord_cartesian(xlim = c(0, 4750)) +  #export, save copy to clip board 1400 X 1200 for power point & 850 x 550 for document.
   theme_bw() +
   theme(text = element_text(size=12), axis.text.x = element_text(size = 12), axis.text.y = element_text(size = 12)) +
   xlab("oage1") +
@@ -503,7 +493,7 @@ g.pred
 #Repeated K- fold Cross validation
 
 # define training control 
-train_control <- trainControl(method="repeatedcv", number=10, repeats=4)
+train_control <- trainControl(method="repeatedcv", number=9, repeats=4)
 #I used number of K-folds = 4 since I have 4*5 = 210 is lose to the 20 years of data I have
 
 # train the model
@@ -534,6 +524,7 @@ drange_sq <- function(vector){
   ((vector[3]-vector[2])/2)^2
 }
 
+#linear model out put
 point_est <- sum(oage1_med1090[1], pred2[1], pred3[1], oage4_med1090[1])
 lwr_est <- sum(oage1_med1090[2],
     pred2[2],
@@ -553,10 +544,9 @@ derange <-sqrt(sum(drange_sq(oage1_med1090),
 
 eggerslm <- c(point_est, point_est - derange, point_est + derange)
 
+lm_output <- rbind(oage1_med1090, pred2, pred3, oage4_med1090, pred_est, eggerslm )
 
-
-lm_output <- rbind(oage1_med1090, pred2log, pred3log, oage4_med1090, pred_est, eggerslm )
-
+# log model output
 point_estlog <- sum(oage1_med1090[1], pred2log[1], pred3log[1], oage4_med1090[1])
 
 lwr_estlog <- sum(oage1_med1090[2],
@@ -580,3 +570,8 @@ eggerslog <- c(point_estlog, point_estlog - derangelog, point_estlog + derangelo
 loglm_output <- rbind(oage1_med1090, pred2log, pred3log, oage4_med1090, pred_estlog, eggerslog )
 
 rbind(lm_output, loglm_output)
+
+mean(chig$lm_percent_off)
+mean(chig$loglm_percent_off)
+
+write.csv(chig, 'output/model_performance.csv')
